@@ -5,12 +5,9 @@ services:
     # Charge les identifiants depuis le .env à la racine
     env_file:
       - ../.env
-    # Expose la db sur localhost:3306 : l'Api s'y connecte sans
-    # changement (DB_HOST=localhost). Le MySQL local de la machine
-    # doit être arrêté pour libérer le port (sudo systemctl stop mysql)
+    # Expose la db sur localhost:3307
     ports:
       - "3307:3306"
-    # Les données persistent entre les redémarrages du conteneur ;
     # le dump initdb/ n'est rejoué que si le contenu de la db est vide
     volumes:
       - db_data:/var/lib/mysql
