@@ -1,13 +1,25 @@
 services:
-  mysql-client:
+  db:
     build:
       context: .
-    # Charge les identifiants depuis le .env à la racine du projet
+    # Charge les identifiants depuis le .env à la racine
     env_file:
       - ../.env
-    # Réseau de l'hôte : DB_HOST=localhost pointe bien vers la db
-    # qui tourne sur la machine (celle visible dans MySQL Workbench)
-    network_mode: host
-    # Nécessaire pour ouvrir un shell mysql interactif
-    stdin_open: true
-    tty: true
+    # Expose la db sur localhost:3306 : l'Api s'y connecte sans
+    # changement (DB_HOST=localhost). Le MySQL local de la machine
+    # doit être arrêté pour libérer le port (sudo systemctl stop mysql)
+    ports:
+      - "3306:3306"
+    # Les données persistent entre les redémarrages du conteneur ;
+    # le dump initdb/ n'est rejoué que si le contenu de la db est vide
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$$DB_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  db_data:

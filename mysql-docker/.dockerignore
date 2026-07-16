@@ -1,3 +1,4 @@
-# Rien d'autre que le Dockerfile n'est nécessaire au build
+# Seul le dump d'init est nécessaire au build
 *
 !Dockerfile
+!initdb/
