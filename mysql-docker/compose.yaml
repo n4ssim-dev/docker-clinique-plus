@@ -1,0 +1,13 @@
+services:
+  mysql-client:
+    build:
+      context: .
+    # Charge les identifiants depuis le .env à la racine du projet
+    env_file:
+      - ../.env
+    # Réseau de l'hôte : DB_HOST=localhost pointe bien vers la db
+    # qui tourne sur la machine (celle visible dans MySQL Workbench)
+    network_mode: host
+    # Nécessaire pour ouvrir un shell mysql interactif
+    stdin_open: true
+    tty: true
