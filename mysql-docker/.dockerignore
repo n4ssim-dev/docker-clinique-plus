@@ -1,0 +1,4 @@
+# Seul le dump d'init est nécessaire au build
+*
+!Dockerfile
+!initdb/
