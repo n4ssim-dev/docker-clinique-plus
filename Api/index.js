@@ -21,4 +21,4 @@ app.use('/api/analytique', analytiqueRoutes);
 
 app.use('/auth', authRoutes);
 
-app.listen(3000, () => console.log(`Server running on http://localhost:3000`));
+app.listen(3000, () => console.log(`Server running on http://localhost:9000`));
