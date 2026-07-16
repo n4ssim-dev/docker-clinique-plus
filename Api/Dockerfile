@@ -1,11 +1,15 @@
-FROM node
+FROM node:latest
 
 WORKDIR /Api
 
-COPY Api/package.json /Api
+COPY Api/package*.json ./
+
 RUN npm install
 
-COPY Api /Api
+COPY Api .
+
 COPY etl2 /etl2
 
-CMD ["node", "index.js"]
+EXPOSE 3000
+
+CMD ["npx", "nodemon", "index.js"]

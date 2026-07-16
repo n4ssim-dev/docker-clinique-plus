@@ -1,0 +1,12 @@
+services:
+  api:
+    image: node-application
+    container_name: clinique-api
+    ports:
+      - "9000:3000"
+    # Charge les identifiants depuis le .env à la racine
+    env_file:
+      - ../.env
+    # Expose la db sur localhost:3306 : l'Api s'y connecte sans
+    # changement (DB_HOST=localhost). Le MySQL local de la machine
+    # doit être arrêté pour libérer le port (sudo systemctl stop mysql)

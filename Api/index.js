@@ -11,7 +11,7 @@ import authRoutes from './routes/authRoutes.js';
 
 const app = express();
 
-app.use(cors({ origin: 'http://localhost:4200' }));
+app.use(cors({ origin: ['http://localhost:4200', 'http://localhost:8080']}));
 app.use(express.json());
 
 app.use('/api/nuit', nuitRoutes);
