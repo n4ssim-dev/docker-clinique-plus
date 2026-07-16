@@ -2,7 +2,7 @@
 # 1. Build l'app angular
 # -------------------------------------------
 
-ARG NODE_VERSION=24.12.0-alpine
+ARG NODE_VERSION=24.15.0-alpine
 ARG NGINX_VERSION=alpine3.22
 
 # Use a lightweight Node.js image for building
@@ -14,7 +14,7 @@ WORKDIR /app
 # Copy les dépendences dans package.json
 COPY package.json *package-lock.json* ./
 # Install les dépendences
-RUN --mount=type=cache,target=/root/.npm npm ci
+RUN npm ci
 # Copy le reste de l'app dans le source code
 COPY . .
 
@@ -22,7 +22,7 @@ COPY . .
 RUN npm run build
 
 # -------------------------------------------
-# 2. Prepare Nginx pour les fichiers statiques
+# 2. Prepare Nginx pour les fichiers statiques (build)
 # -------------------------------------------
 
 FROM nginxinc/nginx-unprivileged:${NGINX_VERSION} AS runner
@@ -39,6 +39,5 @@ USER nginx
 # Expose l'app sur le port 8080
 EXPOSE 8080
 
-# Démarre nginx avec une config custom
-ENTRYPOINT ["nginx", "-c", "/etc/nginx/nginx.conf"]
-CMD ["-g", "daemon off;"]
+# Affiche l'URL puis démarre nginx avec une config custom
+ENTRYPOINT ["/bin/sh", "-c", "echo 'Application angular démarrée sur http://localhost:8080/' && exec nginx -c /etc/nginx/nginx.conf -g 'daemon off;'"]
