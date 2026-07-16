@@ -1,5 +1,9 @@
 services:
   api:
+    # Contexte à la racine du projet : le Dockerfile copie Api/ et etl2/
+    build:
+      context: ..
+      dockerfile: Api/Dockerfile
     image: node-application
     container_name: clinique-api
     ports:
@@ -7,6 +11,11 @@ services:
     # Charge les identifiants depuis le .env à la racine
     env_file:
       - ../.env
-    # Expose la db sur localhost:3306 : l'Api s'y connecte sans
-    # changement (DB_HOST=localhost). Le MySQL local de la machine
-    # doit être arrêté pour libérer le port (sudo systemctl stop mysql)
+    # Dans le réseau Compose, la db est joignable via son nom de service
+    # sur son port interne (3306), pas via localhost:3307 (vue de l'hôte)
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+    depends_on:
+      db:
+        condition: service_healthy

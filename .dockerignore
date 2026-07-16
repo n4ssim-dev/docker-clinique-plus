@@ -1,0 +1,5 @@
+# Ne jamais copier les node_modules de l'hôte dans l'image :
+# les binaires natifs (better-sqlite3...) doivent être compilés
+# dans le conteneur via npm install
+**/node_modules
+**/.git
