@@ -1,6 +1,11 @@
 FROM node
+
 WORKDIR /Api
-COPY package.json /Api
+
+COPY Api/package.json /Api
 RUN npm install
-COPY . /Api
-CMD ["node","index.js"]
+
+COPY Api /Api
+COPY etl2 /etl2
+
+CMD ["node", "index.js"]
