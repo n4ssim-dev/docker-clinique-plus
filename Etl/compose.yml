@@ -1,0 +1,28 @@
+services:
+  streamlit:
+    build:
+      context: .
+    container_name: clinique-streamlit
+    ports:
+      - "8501:8501" # resultats nuits + IA comorbidites
+      - "8502:8502" # dashboard CPAP
+    env_file:
+      - ../.env
+    environment:
+      # Dans le réseau Compose, la db est joignable via son nom de service
+      DB_HOST: db
+      DB_PORT: 3306
+      # Appels serveur -> API via le réseau Compose (port interne 3000)
+      API_BASE_URL: http://api:3000
+      # Lien ouvert dans le navigateur de l'utilisateur -> port publié du front
+      ANGULAR_BASE_URL: http://localhost:8080
+    volumes:
+      # Rapports et courbes générés par l'ETL / l'API
+      - ./outputs:/app/Etl/outputs
+      # Base analytique SQLite (Dashboard CPAP) et modèles IA, à la racine
+      - ../base_analytique.db:/app/base_analytique.db
+      - ../models:/app/models
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
