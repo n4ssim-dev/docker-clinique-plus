@@ -1,11 +1,7 @@
-# -------------------------------------------
-# 1. Build l'app angular
-# -------------------------------------------
-
+ARG NODE_VERSION=24.15.0-alpine
 ARG NODE_VERSION=24.15.0-alpine
 ARG NGINX_VERSION=alpine3.22
 
-# Use a lightweight Node.js image for building
 FROM node:${NODE_VERSION} AS builder
 
 # répertoire de travail dans le dossier app
@@ -27,8 +23,11 @@ RUN npm run build
 
 FROM nginxinc/nginx-unprivileged:${NGINX_VERSION} AS runner
 
-# Copie la config nginx
-COPY nginx.conf /etc/nginx/nginx.conf
+# Copie la config nginx (template : ${API_UPSTREAM} y est injecté au démarrage)
+COPY nginx.conf /etc/nginx/nginx.conf.template
+
+# Cible des appels /api et /auth dans le réseau Compose (nom de service + port interne)
+ENV API_UPSTREAM=api:3000
 
 # Copie le dossier build vers le répertoire HTML de Nginx.
 COPY --chown=nginx:nginx --from=builder /app/dist/*/browser /usr/share/nginx/html
@@ -39,5 +38,7 @@ USER nginx
 # Expose l'app sur le port 8080
 EXPOSE 8080
 
-# Affiche l'URL puis démarre nginx avec une config custom
-ENTRYPOINT ["/bin/sh", "-c", "echo 'Application angular démarrée sur http://localhost:8080/' && exec nginx -c /etc/nginx/nginx.conf -g 'daemon off;'"]
+# Injecte API_UPSTREAM dans la config (envsubst ne touche que cette variable,
+# les $uri/$host de nginx sont préservés), puis démarre nginx.
+# La config générée va dans /tmp car l'utilisateur nginx ne peut pas écrire /etc/nginx
+ENTRYPOINT ["/bin/sh", "-c", "envsubst '${API_UPSTREAM}' < /etc/nginx/nginx.conf.template > /tmp/nginx.conf && echo 'Application angular démarrée sur http://localhost:8080/' && exec nginx -c /tmp/nginx.conf -g 'daemon off;'"]

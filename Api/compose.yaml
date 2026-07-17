@@ -1,6 +1,5 @@
 services:
   api:
-    # Contexte à la racine du projet : le Dockerfile copie Api/ et etl2/
     build:
       context: ..
       dockerfile: Api/Dockerfile
@@ -8,11 +7,8 @@ services:
     container_name: clinique-api
     ports:
       - "9000:3000"
-    # Charge les identifiants depuis le .env à la racine
     env_file:
       - ../.env
-    # Dans le réseau Compose, la db est joignable via son nom de service
-    # sur son port interne (3306), pas via localhost:3307 (vue de l'hôte)
     environment:
       DB_HOST: db
       DB_PORT: 3306
