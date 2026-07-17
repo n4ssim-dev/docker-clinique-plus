@@ -4,3 +4,4 @@ node_modules/
 Api/*.db
 *.db
 *.pdf
+livrable/

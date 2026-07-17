@@ -38,7 +38,14 @@ Ce projet consiste en un prototype de DPI complet intégrant des briques IA pour
 
 ## 1. Lancer le projet
 
-#### Avec Docker (recommandé)
+Deux modes de lancement sont possibles avec Docker :
+
+- **Lancement local** : les images sont **buildées depuis les sources** du dépôt via [docker-compose.yaml](docker-compose.yaml) — à utiliser pour développer/modifier le code.
+- **Lancement via Docker Hub** : les images **déjà publiées** (`n4ssim11/clinique-plus:*`) sont simplement téléchargées via [docker-compose.hub.yaml](docker-compose.hub.yaml) — aucun build, idéal pour tester rapidement le projet.
+
+Dans les deux cas, la stack, les ports et les URLs exposées sont identiques.
+
+#### Option A — Lancement local (build des images)
 
 Le fichier [docker-compose.yaml](docker-compose.yaml) à la racine orchestre quatre conteneurs (via les `compose.yaml` de chaque dossier) :
 
@@ -69,6 +76,28 @@ docker ps
 # Arrêter et supprimer les conteneurs (les données MySQL sont conservées dans le volume)
 docker compose down
 ```
+
+#### Option B — Lancement via Docker Hub (images publiées)
+
+Le fichier [docker-compose.hub.yaml](docker-compose.hub.yaml) tire les images publiées sur Docker Hub (`n4ssim11/clinique-plus:db|api|front|streamlit`) : aucun build ni clone des sources des services n'est nécessaire, seul le `.env` à la racine reste requis (cf. prérequis ci-dessus).
+
+Le flag `-f docker-compose.hub.yaml` est **obligatoire sur chaque commande**, sinon Compose retombe sur le `docker-compose.yaml` local :
+
+```bash
+# Télécharger les images et démarrer la stack en arrière-plan
+docker compose -f docker-compose.hub.yaml up -d
+
+# Récupérer les dernières versions publiées des images
+docker compose -f docker-compose.hub.yaml pull
+
+# Arrêter et supprimer les conteneurs (les données MySQL sont conservées dans le volume)
+docker compose -f docker-compose.hub.yaml down
+
+# Repartir d'une base neuve (supprime aussi les volumes db_data et streamlit_outputs)
+docker compose -f docker-compose.hub.yaml down -v
+```
+
+#### URLs exposées (identiques dans les deux modes)
 
 - Front : http://localhost:8080 (les appels `/api` et `/auth` du navigateur sont relayés par Nginx vers le conteneur `api`)
 - Api : http://localhost:9000
