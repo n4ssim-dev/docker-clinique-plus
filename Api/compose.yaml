@@ -3,7 +3,8 @@ services:
     build:
       context: ..
       dockerfile: Api/Dockerfile
-    image: node-application
+    # Nom pour la publication sur Docker Hub (docker compose build && docker compose push)
+    image: n4ssim11/clinique-plus:api
     container_name: clinique-api
     ports:
       - "9000:3000"
