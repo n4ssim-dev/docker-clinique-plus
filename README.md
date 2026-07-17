@@ -99,6 +99,32 @@ EOF
 
 ### 3. Lancer le projet
 
+#### Option A — Avec Docker (recommandé)
+
+Le fichier [docker-compose.yaml](docker-compose.yaml) à la racine orchestre trois conteneurs (via les `compose.yaml` de chaque dossier) :
+
+| Service | Dossier | Port hôte | Description |
+| --- | --- | --- | --- |
+| `db` | [mysql-docker/](mysql-docker/) | `3307` → 3306 | MySQL 8.4, initialisé automatiquement au premier lancement avec le dump [mysql-docker/initdb/01-clinique.sql](mysql-docker/initdb/01-clinique.sql) (schéma + données + procédures stockées `sp_compteur_*`) |
+| `api` | [Api/](Api/) | `9000` → 3000 | Api Express (nodemon), attend que la db soit *healthy* avant de démarrer |
+| `server` | [Front/](Front/) | `8080` → 8080 | Front Angular buildé et servi par Nginx |
+
+Prérequis : un `.env` **à la racine** (cf. [.env.example](.env.example)), chargé par les conteneurs `db` et `api`. Attention : le dump Docker crée une base nommée **`clinique`** (et non `cliniquearles`), donc `DB_NAME=clinique` dans ce `.env`. `DB_HOST`/`DB_PORT` y sont ignorés par le conteneur `api` (surchargés en `db:3306`, le nom du service dans le réseau Compose).
+
+```bash
+docker compose up --build
+```
+
+- Front : http://localhost:8080
+- Api : http://localhost:9000
+- MySQL depuis l'hôte (debug) : `mysql -h 127.0.0.1 -P 3307 -u root -p`
+
+Le dump `initdb/` n'est rejoué que si le volume de données `db_data` est vide ; pour repartir d'une base neuve : `docker compose down -v` puis relancer. L'étape manuelle d'initialisation MySQL (étape 1) est donc inutile avec Docker.
+
+> Les deux apps Streamlit ne sont **pas conteneurisées** : elles se lancent toujours localement (voir plus bas), avec le datalake SQLite initialisé comme décrit à l'étape 1.
+
+#### Option B — Sans Docker
+
 Positionnez-vous à la racine de votre projet, et dans des terminaux séparés :
 
 ```bash
@@ -110,6 +136,10 @@ nodemon
 cd Front/
 ng serve
 ```
+
+> ⚠️ Hors Docker, l'Api écoute sur le port **3000** (`app.listen(3000)` dans [Api/index.js](Api/index.js), malgré son message de log qui affiche 9000), alors que le Front Angular et l'app Streamlit "Résultats nuit" appellent `http://localhost:9000` en dur. Le port 9000 n'existe que via le mapping Docker (`9000:3000`) : hors Docker, ces appels échoueront tant que le port n'est pas aligné (changer `app.listen`, ou les URLs côté front/ETL).
+
+#### Apps Streamlit (dans les deux cas)
 
 Les deux apps Streamlit du dossier `Etl/` (base analytique déjà initialisée requise, cf. étape 1) sont accessibles depuis des liens de la sidebar Angular (`Front/src/app/components/sidebar/`), avec des ports **codés en dur côté front** (`sidebar.ts`) : elles doivent donc impérativement tourner sur ces ports précis pour que les liens fonctionnent.
 
@@ -125,7 +155,7 @@ streamlit run dashboard_main.py --server.port 8502
 - "Résultats nuit (Validation)" (port 8501, visible aux rôles `operateur`/`admin`) → app "Résultats des Nuits d'Étude".
 - "Tableau de bord CPAP" (port 8502, visible aux rôles `medecin`/`admin`) → dashboard CPAP.
 
-Depuis l'app "Résultats des Nuits d'Étude", le bouton **Valider le diagnostic (génère le PDF)** appelle `POST /api/analytique/resultats-nuit/:id_nuit/valider` sur l'Api Express (nécessite donc l'Api démarrée sur `http://localhost:9000`) : celle-ci recalcule les indicateurs depuis les capteurs, met à jour `resultat_nuit`, synchronise la galaxie analytique, puis génère le dossier patient en PDF (`Api/models/dossierPatientPdf.js`) sous `Api/data/dossiers-patients/dossier-patient-{id_patient}-nuit-{id_nuit}.pdf` — en y intégrant les courbes de la nuit (SpO2, débit nasal, ronflements) si elles ont déjà été produites par l'ETL Python dans `Etl/outputs`. Le chemin du PDF est renvoyé dans la réponse JSON ; il n'existe pas encore de route pour le télécharger depuis le Front. Le bouton **Ouvrir la fiche patient dans CliniquePlus** ramène vers le Front Angular (`http://localhost:4200`).
+Depuis l'app "Résultats des Nuits d'Étude", le bouton **Valider le diagnostic (génère le PDF)** appelle `POST /api/analytique/resultats-nuit/:id_nuit/valider` sur l'Api Express (nécessite donc l'Api démarrée sur `http://localhost:9000`) : celle-ci recalcule les indicateurs depuis les capteurs, met à jour `resultat_nuit`, synchronise la galaxie analytique, puis génère le dossier patient en PDF (`Api/models/dossierPatientPdf.js`) sous `Api/data/dossiers-patients/dossier-patient-{id_patient}-nuit-{id_nuit}.pdf` — en y intégrant les courbes de la nuit (SpO2, débit nasal, ronflements) si elles ont déjà été produites par l'ETL Python dans `Etl/outputs`. Le chemin du PDF est renvoyé dans la réponse JSON ; il n'existe pas encore de route pour le télécharger depuis le Front. Le bouton **Ouvrir la fiche patient dans CliniquePlus** ramène vers le Front Angular (`http://localhost:4200` par défaut ; si le Front tourne en conteneur, exportez `ANGULAR_BASE_URL=http://localhost:8080` avant de lancer l'app Streamlit).
 
 Et pour rejouer le mini ETL CPAP (lit `etl2/raw_cpap/*.csv`, alimente `faits_suivi_cpap_jour`) :
 ```bash
