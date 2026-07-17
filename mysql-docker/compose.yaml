@@ -2,12 +2,9 @@ services:
   db:
     build:
       context: .
-    # Nom pour la publication sur Docker Hub (docker compose build && docker compose push)
     image: n4ssim11/clinique-plus:db
-    # Charge les identifiants depuis le .env à la racine
     env_file:
       - ../.env
-    # Expose la db sur localhost:3307
     ports:
       - "3307:3306"
     # le dump initdb/ n'est rejoué que si le contenu de la db est vide

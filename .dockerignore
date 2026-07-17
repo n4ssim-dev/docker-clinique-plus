@@ -3,3 +3,8 @@
 # dans le conteneur via npm install
 **/node_modules
 **/.git
+# Exclusions Python (l'image streamlit se construit depuis la racine)
+**/.venv
+**/__pycache__
+*.pyc
+Etl/outputs

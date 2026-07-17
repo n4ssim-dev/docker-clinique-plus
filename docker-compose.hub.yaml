@@ -64,10 +64,9 @@ services:
       DB_NAME: ${DB_NAME:-clinique}
       API_BASE_URL: http://api:3000
       ANGULAR_BASE_URL: http://localhost:8080
+    # base_analytique.db et models/ sont embarqués dans l'image
     volumes:
       - streamlit_outputs:/app/Etl/outputs
-      - ./base_analytique.db:/app/base_analytique.db
-      - ./models:/app/models
     depends_on:
       db:
         condition: service_healthy
