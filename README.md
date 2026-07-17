@@ -45,22 +45,40 @@ Ce projet consiste en un prototype de DPI complet intégrant des briques IA pour
 
 #### Avec Docker (recommandé)
 
-Le fichier [docker-compose.yaml](docker-compose.yaml) à la racine orchestre trois conteneurs (via les `compose.yaml` de chaque dossier) :
+Le fichier [docker-compose.yaml](docker-compose.yaml) à la racine orchestre quatre conteneurs (via les `compose.yaml` de chaque dossier) :
 
 | Service | Dossier | Port hôte | Description |
 | --- | --- | --- | --- |
 | `db` | [mysql-docker/](mysql-docker/) | `3307` → 3306 | MySQL 8.4, initialisé automatiquement au premier lancement avec le dump [mysql-docker/initdb/01-clinique.sql](mysql-docker/initdb/01-clinique.sql) (schéma + données + procédures stockées `sp_compteur_*`) |
 | `api` | [Api/](Api/) | `9000` → 3000 | Api Express (nodemon), attend que la db soit *healthy* avant de démarrer |
-| `server` | [Front/](Front/) | `8080` → 8080 | Front Angular buildé et servi par Nginx |
+| `server` | [Front/](Front/) | `8080` → 8080 | Front Angular buildé et servi par Nginx, qui relaie aussi `/api` et `/auth` vers le conteneur `api` |
+| `streamlit` | [Etl/](Etl/) | `8501`, `8502` | Les deux apps Streamlit : résultats de nuit + IA comorbidités (8501) et dashboard CPAP (8502) |
 
-Prérequis : un `.env` **à la racine** (cf. [.env.example](.env.example)), chargé par les conteneurs `db` et `api`. Attention : le dump Docker crée une base nommée **`clinique`** (et non `cliniquearles`), donc `DB_NAME=clinique` dans ce `.env`. `DB_HOST`/`DB_PORT` y sont ignorés par le conteneur `api` (surchargés en `db:3306`, le nom du service dans le réseau Compose).
+Dans le réseau Compose, les conteneurs se parlent par **nom de service et port interne**, injectés via les blocs `environment:` des compose : la db est jointe en `DB_HOST=db` / `DB_PORT=3306` (par `api` et `streamlit`), l'api en `http://api:3000` (par `streamlit` via `API_BASE_URL`, et par le Nginx du front via `API_UPSTREAM`). Les URLs `localhost:<port hôte>` ne servent que depuis l'hôte (navigateur, debug).
+
+Prérequis : un `.env` **à la racine** (cf. [.env.example](.env.example)), chargé par les conteneurs. Attention : le dump Docker crée une base nommée **`clinique`** (et non `cliniquearles`), donc `DB_NAME=clinique` dans ce `.env`. `DB_HOST`/`DB_PORT` y sont ignorés dans Compose (surchargés par les noms de services, cf. ci-dessus) : ils ne servent qu'aux scripts lancés en local hors Docker. `PORT` et `CORS_ORIGINS` sont optionnels (défauts : `3000` et les origines du front en dev/Docker).
 
 ```bash
 docker compose up --build
 ```
 
-- Front : http://localhost:8080
-- Api : http://localhost:9000
-- MySQL depuis l'hôte (debug) : `mysql -h 127.0.0.1 -P 3307 -u root -p`
+Commandes utiles au quotidien :
 
-Le dump `initdb/` n'est rejoué que si le volume de données `db_data` est vide ; pour repartir d'une base neuve : `docker compose down -v` puis relancer. L'étape manuelle d'initialisation MySQL (étape 1) est donc inutile avec Docker.
+```bash
+# Démarrer la stack en arrière-plan (sans bloquer le terminal)
+docker compose up -d
+
+# Vérifier les conteneurs en cours d'exécution (état, ports publiés)
+docker ps
+
+# Arrêter et supprimer les conteneurs (les données MySQL sont conservées dans le volume)
+docker compose down
+```
+
+- Front : http://localhost:8080 (les appels `/api` et `/auth` du navigateur sont relayés par Nginx vers le conteneur `api`)
+- Api : http://localhost:9000
+- Streamlit résultats de nuit + IA : http://localhost:8501
+- Streamlit dashboard CPAP : http://localhost:8502
+- MySQL depuis l'hôte (debug) : `mysql -h 127.0.0.1 -P 3307 -u root -p clinique`
+
+Le dump `initdb/` n'est rejoué que si le volume de données `db_data` est vide ; pour repartir d'une base neuve : `docker compose down -v` puis relancer. Aucune initialisation manuelle de MySQL n'est nécessaire avec Docker.
