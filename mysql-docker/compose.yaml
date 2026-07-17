@@ -1,0 +1,25 @@
+services:
+  db:
+    build:
+      context: .
+    # Nom pour la publication sur Docker Hub (docker compose build && docker compose push)
+    image: n4ssim11/clinique-plus:db
+    # Charge les identifiants depuis le .env à la racine
+    env_file:
+      - ../.env
+    # Expose la db sur localhost:3307
+    ports:
+      - "3307:3306"
+    # le dump initdb/ n'est rejoué que si le contenu de la db est vide
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+    # mysql -h 127.0.0.1 -P 3307 -u root -p clinique
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$$DB_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  db_data:

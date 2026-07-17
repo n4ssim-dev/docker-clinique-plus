@@ -1,0 +1,5 @@
+include:
+  - Front/compose.yaml
+  - mysql-docker/compose.yaml
+  - Api/compose.yaml
+  - Etl/compose.yml

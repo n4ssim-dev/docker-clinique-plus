@@ -11,7 +11,12 @@ import authRoutes from './routes/authRoutes.js';
 
 const app = express();
 
-app.use(cors({ origin: 'http://localhost:4200' }));
+// Origines autorisées, surchargeables via CORS_ORIGINS (séparées par des virgules)
+const corsOrigins = (process.env.CORS_ORIGINS || 'http://localhost:4200,http://localhost:8080')
+  .split(',')
+  .map((origin) => origin.trim());
+
+app.use(cors({ origin: corsOrigins }));
 app.use(express.json());
 
 app.use('/api/nuit', nuitRoutes);
@@ -21,4 +26,5 @@ app.use('/api/analytique', analytiqueRoutes);
 
 app.use('/auth', authRoutes);
 
-app.listen(3000, () => console.log(`Server running on http://localhost:3000`));
+const port = process.env.PORT || 3000;
+app.listen(port, () => console.log(`Server running on port ${port}`));

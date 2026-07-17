@@ -6,6 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const db = new Database(path.join(__dirname, '../../etl2/base_analytique.db'));
+console.log(path.join(__dirname, '../../etl2/base_analytique.db'));
 
 const lireCsvSuiviCpap = (idPatient, idAppareil) => new Promise((resolve, reject) => {
     const cheminCsv = path.join(RAW_CPAP_DIR, `signal-cpap-patient-${idPatient}-appareil-${idAppareil}.csv`);

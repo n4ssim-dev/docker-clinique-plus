@@ -15,7 +15,7 @@ import os
 from ia_comorbidites import get_comorbidite_probable, afficher_prediction_comorbidites
 
 # ====================== CONFIG ======================
-API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:3000")
+API_BASE_URL = os.environ.get("API_BASE_URL", "http://localhost:9000")
 ANGULAR_BASE_URL = os.environ.get("ANGULAR_BASE_URL", "http://localhost:4200")
 
 st.set_page_config(page_title="Clinique du Sommeil", layout="wide")

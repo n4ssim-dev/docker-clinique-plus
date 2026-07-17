@@ -16,7 +16,7 @@ export class NuitsPatient implements OnInit {
   nuits: any[] = [];
 
   ngOnInit() {
-    this.http.get<any>('http://localhost:3000/api/nuit').subscribe({
+    this.http.get<any>('/api/nuit').subscribe({
       next: (res) => (this.nuits = res.data),
       error: (err) => console.error('API Error:', err),
     });

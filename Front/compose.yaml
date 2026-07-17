@@ -1,0 +1,14 @@
+services:
+  server:
+    build:
+      context: .
+    # Nom pour la publication sur Docker Hub (docker compose build && docker compose push)
+    image: n4ssim11/clinique-plus:front
+    ports:
+      - 8080:8080
+    # Nginx relaye /api et /auth vers ce service du réseau Compose
+    environment:
+      API_UPSTREAM: api:3000
+    # nginx résout le nom "api" au démarrage : le conteneur doit exister avant
+    depends_on:
+      - api

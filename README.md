@@ -7,6 +7,7 @@
 [![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
 [![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 [![AI](https://img.shields.io/badge/AI-412991?style=for-the-badge&logo=openai&logoColor=white)](https://openai.com/)
 [![SCSS](https://img.shields.io/badge/SCSS-CC6699?style=for-the-badge&logo=sass&logoColor=white)](https://sass-lang.com/)
 [![Trello](https://img.shields.io/badge/Trello-0052CC?style=for-the-badge&logo=trello&logoColor=white)](https://trello.com/)
@@ -23,112 +24,56 @@ Ce projet consiste en un prototype de DPI complet intégrant des briques IA pour
 
 ## UML / Diagramme d'utilisation
 
-![image](schemas_et_diagramme/diagram_projet.drawio.png)
+<a href="schemas_et_diagramme/diagram_projet.drawio.png"><img src="schemas_et_diagramme/diagram_projet.drawio.png" alt="Diagramme d'utilisation" width="600"></a>
 
 ## Diagramme base de données :
 
-### 1. Base MySQL
-
-![image](schemas_et_diagramme/mld_mysql/schema_bdd_leger.jpg)
-
-### 2. Datalake
-
-![image](schemas_et_diagramme/mld_datalake/schema_bdd_datalake.jpg) 
-
-### 3. Base analytique
-
-![image](schemas_et_diagramme/mld_base_analytique/schema_bdd_analytique.jpg)
+| Nom | Illustration |
+| --- | --- |
+| Base MySQL | <a href="schemas_et_diagramme/mld_mysql/schema_bdd_leger.jpg"><img src="schemas_et_diagramme/mld_mysql/schema_bdd_leger.jpg" alt="Schéma base MySQL" width="400"></a> |
+| Datalake | <a href="schemas_et_diagramme/mld_datalake/schema_bdd_datalake.jpg"><img src="schemas_et_diagramme/mld_datalake/schema_bdd_datalake.jpg" alt="Schéma datalake" width="400"></a> |
+| Base analytique | <a href="schemas_et_diagramme/mld_base_analytique/schema_bdd_analytique.jpg"><img src="schemas_et_diagramme/mld_base_analytique/schema_bdd_analytique.jpg" alt="Schéma base analytique" width="400"></a> |
 
 # Installation
-### 1. Initialiser les bases de données
-Ce projet dipose de deux bases de données :
-- Une base MySQL opérationnelle (`cliniquearles`), utilisée par l'Api Express.
-- Un datalake SQLite analytique en modèle galaxie/constellation, utilisé par les apps Streamlit du dossier `Etl/` et par le mini ETL CPAP de l'Api (`POST /api/analytique/cpap/import`, via `Api/models/cpapModel.js`).
 
-**Base MySQL** : dans un schéma vierge nommé `cliniquearles`, exécutez dans l'ordre :
-1. [Api/dbmigration.sql](Api/dbmigration.sql) — schéma + données de démo (dump le plus à jour, à privilégier sur `clinique2nuitsv2.sql` qui est une version antérieure du même dump).
-2. [Api/storedprocedure.sql](Api/storedprocedure.sql) — procédures stockées utilisées par l'Api (`sp_compteur_*`).
+## 1. Lancer le projet
 
-`Api/auth_migration.sql` existe (colonnes `password_hash`, tables `user_role`/`refresh_token`) mais n'est **pas branché au code actuel** : `authController.js` compare encore le mot de passe en clair via la table `utilisateur`. Inutile de le jouer sauf si vous reprenez le chantier d'authentification hashée (le script `seed.js` qu'il mentionne n'existe pas non plus dans le dépôt).
+#### Avec Docker (recommandé)
 
-**Datalake SQLite** : les fichiers `.db` sont ignorés par git (`.gitignore`), donc absents d'un clone fraîchement cloné. Il n'y a pas de script qui reconstruit le schéma complet de la galaxie depuis zéro dans ce dépôt (seul `etl2/extract2.py` sait créer/alimenter la table `faits_suivi_cpap_jour`) — récupérez un `base_analytique.db` pré-rempli auprès de l'équipe et placez-le à deux endroits :
-- `base_analytique.db` à la racine (lu par les apps Streamlit de `Etl/`)
-- `etl2/base_analytique.db` (alimenté par `Api/models/cpapModel.js` lors du mini ETL CPAP)
+Le fichier [docker-compose.yaml](docker-compose.yaml) à la racine orchestre quatre conteneurs (via les `compose.yaml` de chaque dossier) :
 
-Ce sont deux copies indépendantes du même fichier, sans synchronisation automatique : si vous relancez `etl2/extract2.py`, pensez à recopier le fichier mis à jour vers la racine pour que les apps Streamlit voient les nouvelles données.
+| Service | Dossier | Port hôte | Description |
+| --- | --- | --- | --- |
+| `db` | [mysql-docker/](mysql-docker/) | `3307` → 3306 | MySQL 8.4, initialisé automatiquement au premier lancement avec le dump [mysql-docker/initdb/01-clinique.sql](mysql-docker/initdb/01-clinique.sql) (schéma + données + procédures stockées `sp_compteur_*`) |
+| `api` | [Api/](Api/) | `9000` → 3000 | Api Express (nodemon), attend que la db soit *healthy* avant de démarrer |
+| `server` | [Front/](Front/) | `8080` → 8080 | Front Angular buildé et servi par Nginx, qui relaie aussi `/api` et `/auth` vers le conteneur `api` |
+| `streamlit` | [Etl/](Etl/) | `8501`, `8502` | Les deux apps Streamlit : résultats de nuit + IA comorbidités (8501) et dashboard CPAP (8502) |
 
-**Modèles IA (comorbidités)** : `models/` à la racine contient un `.pkl` par comorbidité (RandomForest entraîné via `Etl/base-analytique-et-apps/ia_comorbidites.py`, features = indicateurs de nuit + IMC/tabac du patient). Le dossier est créé/rempli automatiquement au premier lancement de l'app Streamlit "Résultats nuit (IA)" si absent — aucune étape manuelle requise.
+Dans le réseau Compose, les conteneurs se parlent par **nom de service et port interne**, injectés via les blocs `environment:` des compose : la db est jointe en `DB_HOST=db` / `DB_PORT=3306` (par `api` et `streamlit`), l'api en `http://api:3000` (par `streamlit` via `API_BASE_URL`, et par le Nginx du front via `API_UPSTREAM`). Les URLs `localhost:<port hôte>` ne servent que depuis l'hôte (navigateur, debug).
 
-### 2. Installez les dépendences :
-Afin que le projet soit fonctionnel, les environnements comprenant les dépendences nécessaires au fonctionnement du projet doivent être installés.
-
-> il est supposé que vous disposiez déja de NPM, node, nodemon et python localement. 
-
-Positionnez-vous à la racine de votre projet et effectuez ces commandes :
-
-```bash 
-cd Api
-cp ../.env.example .env
-npm install
-```
-** Veuillez renseigner les bons identifiants de connexion à votre base de données MYSQL créér précédemment (`DB_NAME=cliniquearles`), ainsi que `PYTHON_PATH` (ex. `python3` sous Linux/macOS) : l'Api lance des scripts Python (`Etl/index.py`) en sous-processus pour certaines mises à jour de nuit.
-```bash
-cd ../Front
-npm install
-```
-```bash
-cd ../Etl
-python3 -m venv .venv
-```
-```bash
-source .venv/bin/activate   # Windows : .venv\Scripts\activate
-python3 -m pip install -r requirements.txt
-```
-
-Les scripts Python (`Etl/`, `etl2/`) chargent leurs identifiants MySQL via un second `.env`, **à la racine du projet** (différent de `Api/.env`) :
-```bash
-cd ..
-cat > .env << 'EOF'
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=votre_mot_de_passe
-DB_NAME=cliniquearles
-EOF
-```
-
-### 3. Lancer le projet
-
-Positionnez-vous à la racine de votre projet, et dans des terminaux séparés :
+Prérequis : un `.env` **à la racine** (cf. [.env.example](.env.example)), chargé par les conteneurs. Attention : le dump Docker crée une base nommée **`clinique`** (et non `cliniquearles`), donc `DB_NAME=clinique` dans ce `.env`. `DB_HOST`/`DB_PORT` y sont ignorés dans Compose (surchargés par les noms de services, cf. ci-dessus) : ils ne servent qu'aux scripts lancés en local hors Docker. `PORT` et `CORS_ORIGINS` sont optionnels (défauts : `3000` et les origines du front en dev/Docker).
 
 ```bash
-cd Api/
-nodemon
+docker compose up --build
 ```
+
+Commandes utiles au quotidien :
 
 ```bash
-cd Front/
-ng serve
+# Démarrer la stack en arrière-plan (sans bloquer le terminal)
+docker compose up -d
+
+# Vérifier les conteneurs en cours d'exécution (état, ports publiés)
+docker ps
+
+# Arrêter et supprimer les conteneurs (les données MySQL sont conservées dans le volume)
+docker compose down
 ```
 
-Les deux apps Streamlit du dossier `Etl/` (base analytique déjà initialisée requise, cf. étape 1) sont accessibles depuis des liens de la sidebar Angular (`Front/src/app/components/sidebar/`), avec des ports **codés en dur côté front** (`sidebar.ts`) : elles doivent donc impérativement tourner sur ces ports précis pour que les liens fonctionnent.
+- Front : http://localhost:8080 (les appels `/api` et `/auth` du navigateur sont relayés par Nginx vers le conteneur `api`)
+- Api : http://localhost:9000
+- Streamlit résultats de nuit + IA : http://localhost:8501
+- Streamlit dashboard CPAP : http://localhost:8502
+- MySQL depuis l'hôte (debug) : `mysql -h 127.0.0.1 -P 3307 -u root -p clinique`
 
-```bash
-cd Etl/base-analytique-et-apps
-streamlit run app_resultats_nuit_avec_ia.py --server.port 8501
-```
-```bash
-cd Etl/base-analytique-et-apps/Dashboard_CPAP
-streamlit run dashboard_main.py --server.port 8502
-```
-
-- "Résultats nuit (Validation)" (port 8501, visible aux rôles `operateur`/`admin`) → app "Résultats des Nuits d'Étude".
-- "Tableau de bord CPAP" (port 8502, visible aux rôles `medecin`/`admin`) → dashboard CPAP.
-
-Depuis l'app "Résultats des Nuits d'Étude", le bouton **Valider le diagnostic (génère le PDF)** appelle `POST /api/analytique/resultats-nuit/:id_nuit/valider` sur l'Api Express (nécessite donc l'Api démarrée sur `http://localhost:3000`) : celle-ci recalcule les indicateurs depuis les capteurs, met à jour `resultat_nuit`, synchronise la galaxie analytique, puis génère le dossier patient en PDF (`Api/models/dossierPatientPdf.js`) sous `Api/data/dossiers-patients/dossier-patient-{id_patient}-nuit-{id_nuit}.pdf` — en y intégrant les courbes de la nuit (SpO2, débit nasal, ronflements) si elles ont déjà été produites par l'ETL Python dans `Etl/outputs`. Le chemin du PDF est renvoyé dans la réponse JSON ; il n'existe pas encore de route pour le télécharger depuis le Front. Le bouton **Ouvrir la fiche patient dans CliniquePlus** ramène vers le Front Angular (`http://localhost:4200`).
-
-Et pour rejouer le mini ETL CPAP (lit `etl2/raw_cpap/*.csv`, alimente `faits_suivi_cpap_jour`) :
-```bash
-cd etl2
-python3 extract2.py && python3 transform2.py && python3 load2.py
-```
+Le dump `initdb/` n'est rejoué que si le volume de données `db_data` est vide ; pour repartir d'une base neuve : `docker compose down -v` puis relancer. Aucune initialisation manuelle de MySQL n'est nécessaire avec Docker.

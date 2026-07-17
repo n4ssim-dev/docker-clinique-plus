@@ -1,0 +1,18 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: Api/Dockerfile
+    # Nom pour la publication sur Docker Hub (docker compose build && docker compose push)
+    image: n4ssim11/clinique-plus:api
+    container_name: clinique-api
+    ports:
+      - "9000:3000"
+    env_file:
+      - ../.env
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+    depends_on:
+      db:
+        condition: service_healthy

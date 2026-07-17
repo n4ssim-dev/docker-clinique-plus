@@ -20,7 +20,7 @@ export class AuthService {
 
   login(data: any) {
     return this.http
-      .post('http://localhost:3000/auth/login', data)
+      .post('/auth/login', data)
       .pipe(tap((response: any) => {
         const mail = response.data.mail;
         const role = response.data.password;
@@ -32,19 +32,19 @@ export class AuthService {
 
   getAppareils() {
     return this.http
-      .get<any>('http://localhost:3000/api/appareil')
+      .get<any>('/api/appareil')
       .pipe(tap((reponse) => this.appareils.set(reponse.data)));
   }
 
   fetchMedecines() {
     return this.http
-      .get<any>('http://localhost:3000/api/med')
+      .get<any>('/api/med')
       .pipe(tap((reponse) => this.medecines.set(reponse.data)));
   }
 
   fetchNuits() {
     return this.http
-      .get<any>('http://localhost:3000/api/nuit')
+      .get<any>('/api/nuit')
       .pipe(tap((reponse) => {
         this.nuits.set([])
         this.nuits.set(reponse.data)}));
