@@ -23,21 +23,15 @@ Ce projet consiste en un prototype de DPI complet intégrant des briques IA pour
 
 ## UML / Diagramme d'utilisation
 
-![image](schemas_et_diagramme/diagram_projet.drawio.png)
+<a href="schemas_et_diagramme/diagram_projet.drawio.png"><img src="schemas_et_diagramme/diagram_projet.drawio.png" alt="Diagramme d'utilisation" width="600"></a>
 
 ## Diagramme base de données :
 
-### 1. Base MySQL
-
-![image](schemas_et_diagramme/mld_mysql/schema_bdd_leger.jpg)
-
-### 2. Datalake
-
-![image](schemas_et_diagramme/mld_datalake/schema_bdd_datalake.jpg) 
-
-### 3. Base analytique
-
-![image](schemas_et_diagramme/mld_base_analytique/schema_bdd_analytique.jpg)
+| Nom | Illustration |
+| --- | --- |
+| Base MySQL | <a href="schemas_et_diagramme/mld_mysql/schema_bdd_leger.jpg"><img src="schemas_et_diagramme/mld_mysql/schema_bdd_leger.jpg" alt="Schéma base MySQL" width="400"></a> |
+| Datalake | <a href="schemas_et_diagramme/mld_datalake/schema_bdd_datalake.jpg"><img src="schemas_et_diagramme/mld_datalake/schema_bdd_datalake.jpg" alt="Schéma datalake" width="400"></a> |
+| Base analytique | <a href="schemas_et_diagramme/mld_base_analytique/schema_bdd_analytique.jpg"><img src="schemas_et_diagramme/mld_base_analytique/schema_bdd_analytique.jpg" alt="Schéma base analytique" width="400"></a> |
 
 # Installation
 
