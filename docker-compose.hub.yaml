@@ -1,0 +1,78 @@
+# Compose "distant" : tout tourne à partir des images publiées sur docker hub
+#   docker compose -f docker-compose.hub.yaml up -d
+
+name: clinique-plus
+
+services:
+  db:
+    image: n4ssim11/clinique-plus:db
+    container_name: clinique-db
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD:-mdp}
+      DB_NAME: ${DB_NAME:-clinique}
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$$DB_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    image: n4ssim11/clinique-plus:api
+    container_name: clinique-api
+    ports:
+      - "9000:3000"
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD:-mdp}
+      DB_NAME: ${DB_NAME:-clinique}
+      PORT: 3000
+      PYTHON_PATH: python3
+      CORS_ORIGINS: http://localhost:4200,http://localhost:8080
+    depends_on:
+      db:
+        condition: service_healthy
+
+  server:
+    image: n4ssim11/clinique-plus:front
+    container_name: clinique-front
+    ports:
+      - "8080:8080"
+    # Nginx relaye /api et /auth vers le service api du réseau Compose
+    environment:
+      API_UPSTREAM: api:3000
+    depends_on:
+      - api
+
+  streamlit:
+    image: n4ssim11/clinique-plus:streamlit
+    container_name: clinique-streamlit
+    ports:
+      - "8501:8501" # resultats nuits + IA comorbidites
+      - "8502:8502" # dashboard CPAP
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD:-mdp}
+      DB_NAME: ${DB_NAME:-clinique}
+      API_BASE_URL: http://api:3000
+      ANGULAR_BASE_URL: http://localhost:8080
+    volumes:
+      - streamlit_outputs:/app/Etl/outputs
+      - ./base_analytique.db:/app/base_analytique.db
+      - ./models:/app/models
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  streamlit_outputs:

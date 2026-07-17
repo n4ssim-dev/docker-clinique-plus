@@ -2,6 +2,8 @@ services:
   streamlit:
     build:
       context: .
+    # Nom pour la publication sur Docker Hub (docker compose build && docker compose push)
+    image: n4ssim11/clinique-plus:streamlit
     container_name: clinique-streamlit
     ports:
       - "8501:8501" # resultats nuits + IA comorbidites
